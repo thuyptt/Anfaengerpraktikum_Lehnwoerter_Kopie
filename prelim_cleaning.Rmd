@@ -1,0 +1,163 @@
+---
+title: 'Lehnwörter im Spanischen im Rahmen des Korpusprojekts Fonología del Español Contemporáneo (FEC)'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+# Set path for working directory
+setwd("D:\\AnfPrak")
+```
+
+```{r libraries}
+# Import libraries
+library(readxl)
+library(tidyverse)
+```
+
+# Inspect Dataset
+
+```{r dataset}
+# Import dataset from .xlsx file
+data_original <- read_excel("D:\\AnfPrak\\Lehnwörter_UniWien.xlsx")
+```
+
+```{r}
+str(data_original)
+```
+
+
+```{r create_dataframe}
+# Copy dataset to data frame, convert to appropriate initial data types
+df <- type.convert(data_original)
+```
+
+```{r}
+# Inspect data structure
+str(df)
+```
+
+```{r}
+# Inspect data summary
+summary(df)
+```
+
+**Findings**
+
+- Aussprache: 31 Beobachtungen als FALSE angegeben, diese sollten mit NA codiert werden
+- Studium enthält 6 Beobachtungen als k.A., diese sollten als NA codiert werden
+- Ausbildung: gleiches wie bei Studium
+- Variablennamen sind z.T. sehr lang und enthalten Sonderzeichen
+- Anzahl Muttersprachen ist als Integer codiert, Anzahl Fremdsprachen als Factor, diese sollten einheitlich sein als Factor
+
+
+```{r}
+# Umcodierung von fehlenden Daten in NA
+nas <- c("k.A.", "FALSE")
+df <- type.convert(df, na.strings = nas)
+```
+
+
+```{r}
+# Variablennamen
+names(df)
+```
+
+```{r}
+# Extrem lange Variablennamen kürzen
+df <- df %>%
+  rename(Silbenstruktur = `Silbenstruktur (Anzahl Silben, erste Silbe offen oder geschlossen?)`, 
+         Frequenz = `Frequenz (Anzahl dokumentierter Fälle im Referenzkorpus)`)
+```
+
+```{r}
+# Leerzeichen & Bindestrich in Variablennamen durch _ ersetzen
+names(df) <- gsub(" ", "_", names(df))
+names(df) <- gsub("-", "_", names(df))
+```
+
+```{r}
+# Spezifizität zu Wort oder Sprecher kennzeichnen
+
+# Vektoren mit Zuordnungen erstellen
+wort_features <- c("Wort", "Herkunft", "Vokal_vor_Endkonsonant", "Silbenstruktur", "Frequenz", "Eintrittsdatum_Lehnwörter")
+
+sprecher_features <- c("Sprecher_ID", "Ort", "Kontinent", "Lage", "Einwohnerzahl", "Jahrgang_SprecherIn", "Geschlecht", "Studium", "Ausbildung", "Anzahl_Muttersprachen", "Fremdsprachen", "Fremdsprachen_Art")
+
+# Präfixes an Variablennamen anfügen
+wort_namen <- paste("wrd", wort_features, sep = "_")
+sprecher_namen <- paste("spk", sprecher_features, sep = "_")
+
+# Variablennamen im Dataframe ändern
+df <- df %>% 
+  rename_at(vars(wort_features), ~ wort_namen) %>%
+  rename_at(vars(sprecher_features), ~ sprecher_namen)
+```
+
+
+```{r}
+# Spalten sortieren nach Zugehörigkeit: spk, wrd, target
+
+# Vektor mit sortierten Namen anlegen
+col_order <- c("spk_Sprecher_ID", "spk_Jahrgang_SprecherIn", "spk_Geschlecht", "spk_Ausbildung", "spk_Studium", "spk_Anzahl_Muttersprachen", "spk_Fremdsprachen", "spk_Fremdsprachen_Art", "spk_Ort", "spk_Kontinent", "spk_Lage", "spk_Einwohnerzahl", "wrd_Wort", "wrd_Herkunft", "wrd_Eintrittsdatum_Lehnwörter", "wrd_Frequenz", "wrd_Silbenstruktur", "wrd_Vokal_vor_Endkonsonant", "Aussprache", "Qualität")
+
+# Prüfe Vektorlänge == Anzahl Spalten
+#length(col_order)
+
+# Sortierung auf Dataframe anwenden
+df <- df[, col_order]
+```
+
+
+## Fehlende Werte
+
+```{r}
+# Anteil fehlender Werte pro Spalte
+missing_col <- sapply(df, function(x) sum(is.na(x))) / nrow(df)
+missing_col
+```
+
+```{r}
+missing_col[missing_col > 0]
+```
+
+
+```{r}
+# Anteil fehlender Werte pro Zeile
+missing_row <- apply(df, 1, function(x) sum(is.na(x))) / ncol(df)
+# Vorhandene Anteile
+unique(missing_row[missing_row > 0])
+```
+
+
+**Findings**
+
+- Es gibt 4 Spalten mit fehlenden Werten
+- 0.69% der Werte in spk_Ausbildung und in spk_Studium fehlen
+- 3.59% der Werte in Aussprache fehlen
+- 57.87% der Werte in Qualität fehlen (!)
+
+- Zeilen mit fehlenden Werten können in den Spalten spk_Ausbildung, spk_Studium und Aussprache entfernt werden, bei Qualität erfordert die große Zahl an fehlenden Werten nähere Betrachtung
+
+- In den Zeilen fehlen maximal 15% der Werte pro Zeile, das entspricht fehlenden Werten in drei Spalten
+
+```{r}
+# Zeilen mit fehlenden Werten in spk_Ausbildung, spk_Studium oder Aussprache entfernen
+df <- df[!is.na(df$Aussprache) & !is.na(df$spk_Studium) & !is.na(df$spk_Ausbildung),]
+```
+
+
+```{r}
+# Export df to csv file w/o index column
+write.csv(df, "E:\\AnfPrak\\apr\\preclean_data.csv", row.names = FALSE)
+```
+
+```{r}
+summary(df)
+```
+
+
+
+
+
+
