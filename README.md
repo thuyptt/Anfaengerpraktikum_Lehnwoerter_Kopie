@@ -1,7 +1,7 @@
 
 # Anfängerpraktikum
 Thema: Lehnwörter im Spanischen im Rahmen des Korpusprojekts FEC 
-(Sprachwissenschaftliche Analyse der Aussprache von spanischen Wörtern, die aus anderen Sprachen übernommen wurden)
+(-> Sprachwissenschaftliche Analyse der Aussprache von spanischen Wörtern, die aus anderen Sprachen übernommen wurden)
 
     
 ⚠️ Hinweis zur Datenverfügbarkeit
